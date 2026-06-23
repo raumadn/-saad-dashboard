@@ -2,6 +2,7 @@ import json
 import os
 import re
 import zipfile
+import textwrap
 from pathlib import Path
 from typing import List, Optional, Tuple
 
@@ -64,7 +65,7 @@ DATASETS = {
 # ============================================================
 
 st.markdown(
-    """
+    textwrap.dedent("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -384,7 +385,7 @@ st.markdown(
             }
         }
     </style>
-    """,
+    """),
     unsafe_allow_html=True,
 )
 
@@ -994,7 +995,7 @@ def render_top_command_center(df: pd.DataFrame) -> None:
     )
 
     st.markdown(
-        f"""
+        textwrap.dedent(f"""
         <div class="hero-header">
             <div>
                 <div class="brand-title">Departments</div>
@@ -1070,7 +1071,7 @@ def render_top_command_center(df: pd.DataFrame) -> None:
                 </div>
             </div>
         </div>
-        """,
+        """),
         unsafe_allow_html=True,
     )
 
