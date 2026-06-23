@@ -1042,8 +1042,8 @@ def render_top_command_center(df: pd.DataFrame) -> None:
         """
         <div class="hero-header">
             <div>
-                <div class="brand-title">Departments</div>
-                <div class="breadcrumb">Map / SAAD Dealer / Automotive Command Center</div>
+                <div class="brand-title">Raum Saad Adnan Property</div>
+                <div class="breadcrumb">Map / Raum Saad Adnan Property / Command Center</div>
             </div>
             <div class="status-pill">● Premium Analytics</div>
         </div>
@@ -1069,7 +1069,6 @@ def render_top_command_center(df: pd.DataFrame) -> None:
         st.metric("Average Margin", format_currency(avg_margin))
         st.metric("Top Region", str(top_region))
         st.metric("Dashboard Mode", "Globe Intelligence")
-        st.metric("Data Source", "Kaggle API Ready")
 
 
 def render_kpis(df: pd.DataFrame) -> None:
