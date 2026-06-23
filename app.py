@@ -17,22 +17,12 @@ try:
 except Exception:
     KaggleApi = None
 
-
-# ============================================================
-# PAGE CONFIG
-# ============================================================
-
 st.set_page_config(
     page_title="SAAD Dealer | Automotive Intelligence",
     page_icon="🚘",
     layout="wide",
     initial_sidebar_state="expanded",
 )
-
-
-# ============================================================
-# CONSTANTS
-# ============================================================
 
 APP_TITLE = "SAAD Dealer"
 APP_SUBTITLE = "Automotive Sales Intelligence Command Center"
@@ -59,10 +49,6 @@ DATASETS = {
     },
 }
 
-
-# ============================================================
-# THEME CSS
-# ============================================================
 
 st.markdown(
     textwrap.dedent("""
@@ -389,11 +375,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-
-# ============================================================
-# DATA UTILITIES
-# ============================================================
-
 def normalize_column_name(col: str) -> str:
     col = str(col).strip().lower()
     col = re.sub(r"[^a-z0-9]+", "_", col)
@@ -526,10 +507,6 @@ def apply_dark_layout(fig, height: int = 430):
 
     return fig
 
-
-# ============================================================
-# KAGGLE API
-# ============================================================
 
 def _read_local_kaggle_json() -> Tuple[Optional[str], Optional[str]]:
     """Local-only fallback. These files are gitignored and must not be uploaded to GitHub."""
@@ -780,10 +757,6 @@ def generate_demo_data(seed: int = 42) -> pd.DataFrame:
     return pd.concat([vehicle, dealer, orders], ignore_index=True)
 
 
-# ============================================================
-# STANDARDIZATION
-# ============================================================
-
 def standardize_sales_data(df: pd.DataFrame, dataset_key: str) -> pd.DataFrame:
     original = df.copy()
     original.columns = [normalize_column_name(c) for c in original.columns]
@@ -860,10 +833,6 @@ def load_all_standardized_data(
 
     return pd.concat(frames, ignore_index=True)
 
-
-# ============================================================
-# SIDEBAR AND FILTERS
-# ============================================================
 
 def render_sidebar() -> Tuple[Tuple[str, ...], Optional[int], bool]:
     st.sidebar.markdown("## 🚘 SAAD Dealer")
@@ -968,11 +937,6 @@ def apply_sidebar_filters(df: pd.DataFrame) -> pd.DataFrame:
             ]
 
     return filtered
-
-
-# ============================================================
-# TOP GLOBE COMMAND CENTER
-# ============================================================
 
 def build_plotly_globe(df: pd.DataFrame):
     """
