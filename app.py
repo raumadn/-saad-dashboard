@@ -17,12 +17,22 @@ try:
 except Exception:
     KaggleApi = None
 
+
+# ============================================================
+# PAGE CONFIG
+# ============================================================
+
 st.set_page_config(
     page_title="SAAD Dealer | Automotive Intelligence",
     page_icon="🚘",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="collapsed",
 )
+
+
+# ============================================================
+# CONSTANTS
+# ============================================================
 
 APP_TITLE = "SAAD Dealer"
 APP_SUBTITLE = "Automotive Sales Intelligence Command Center"
@@ -49,6 +59,10 @@ DATASETS = {
     },
 }
 
+
+# ============================================================
+# THEME CSS
+# ============================================================
 
 st.markdown(
     textwrap.dedent("""
@@ -375,6 +389,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+
+# ============================================================
+# DATA UTILITIES
+# ============================================================
+
 def normalize_column_name(col: str) -> str:
     col = str(col).strip().lower()
     col = re.sub(r"[^a-z0-9]+", "_", col)
@@ -507,6 +526,10 @@ def apply_dark_layout(fig, height: int = 430):
 
     return fig
 
+
+# ============================================================
+# KAGGLE API
+# ============================================================
 
 def _read_local_kaggle_json() -> Tuple[Optional[str], Optional[str]]:
     """Local-only fallback. These files are gitignored and must not be uploaded to GitHub."""
@@ -757,6 +780,10 @@ def generate_demo_data(seed: int = 42) -> pd.DataFrame:
     return pd.concat([vehicle, dealer, orders], ignore_index=True)
 
 
+# ============================================================
+# STANDARDIZATION
+# ============================================================
+
 def standardize_sales_data(df: pd.DataFrame, dataset_key: str) -> pd.DataFrame:
     original = df.copy()
     original.columns = [normalize_column_name(c) for c in original.columns]
@@ -834,109 +861,34 @@ def load_all_standardized_data(
     return pd.concat(frames, ignore_index=True)
 
 
+# ============================================================
+# SIDEBAR AND FILTERS
+# ============================================================
+
 def render_sidebar() -> Tuple[Tuple[str, ...], Optional[int], bool]:
-    st.sidebar.markdown("## 🚘 SAAD Dealer")
-    st.sidebar.caption("Automotive Intelligence")
+    """
+    Silent loader.
 
-    credentials_found = has_kaggle_credentials()
-    use_demo_data = st.sidebar.toggle(
-        "Use demo data",
-        value=not credentials_found,
-        help="Jika Kaggle Secrets belum terdeteksi, dashboard otomatis memakai demo data supaya aplikasi tetap terbuka.",
-    )
-
-    if credentials_found:
-        st.sidebar.success("Kaggle credential detected.")
-    else:
-        st.sidebar.warning("Kaggle credential belum terdeteksi. Isi Streamlit Cloud Secrets untuk memakai data Kaggle asli.")
-
-    st.sidebar.markdown("### Kaggle Datasets")
-
-    dataset_labels = {key: value["label"] for key, value in DATASETS.items()}
-    label_to_key = {value: key for key, value in dataset_labels.items()}
-
-    selected_labels = st.sidebar.multiselect(
-        "Select datasets",
-        options=list(label_to_key.keys()),
-        default=list(label_to_key.keys()),
-        disabled=use_demo_data,
-    )
-
-    selected_keys = tuple(label_to_key[label] for label in selected_labels)
-
-    st.sidebar.markdown("### Loading")
-    row_limit_choice = st.sidebar.selectbox(
-        "Rows per dataset",
-        options=["10,000 rows", "50,000 rows", "100,000 rows", "200,000 rows", "Full dataset"],
-        index=1,
-        disabled=use_demo_data,
-    )
-
-    row_limit_map = {
-        "10,000 rows": 10_000,
-        "50,000 rows": 50_000,
-        "100,000 rows": 100_000,
-        "200,000 rows": 200_000,
-        "Full dataset": None,
-    }
-
-    st.sidebar.markdown("---")
-    st.sidebar.markdown(
-        """
-        <div class="small-note">
-        Kaggle credential disimpan melalui Streamlit Secrets. Jangan upload <b>kaggle.json</b> ke GitHub.
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-
-    return selected_keys, row_limit_map[row_limit_choice], use_demo_data
+    No sidebar UI is shown.
+    The app automatically loads all configured Kaggle datasets.
+    If Kaggle credentials are not available, it falls back to demo data.
+    """
+    selected_keys = tuple(DATASETS.keys())
+    max_rows = 50_000
+    use_demo_data = not has_kaggle_credentials()
+    return selected_keys, max_rows, use_demo_data
 
 
 def apply_sidebar_filters(df: pd.DataFrame) -> pd.DataFrame:
-    filtered = df.copy()
+    """
+    Sidebar filters removed for clean presentation mode.
+    """
+    return df.copy()
 
-    st.sidebar.markdown("### Filters")
 
-    source_options = sorted(filtered["source"].dropna().unique().tolist())
-    selected_sources = st.sidebar.multiselect("Dataset Source", source_options, default=source_options)
-
-    if selected_sources:
-        filtered = filtered[filtered["source"].isin(selected_sources)]
-
-    brand_options = sorted(filtered["brand"].dropna().unique().tolist())
-    selected_brands = st.sidebar.multiselect("Brand / Product Line", brand_options, default=[])
-
-    if selected_brands:
-        filtered = filtered[filtered["brand"].isin(selected_brands)]
-
-    region_options = sorted(filtered["region"].dropna().unique().tolist())
-    selected_regions = st.sidebar.multiselect("Region", region_options, default=[])
-
-    if selected_regions:
-        filtered = filtered[filtered["region"].isin(selected_regions)]
-
-    valid_dates = filtered["date"].dropna()
-
-    if not valid_dates.empty:
-        min_date = valid_dates.min().date()
-        max_date = valid_dates.max().date()
-
-        date_range = st.sidebar.date_input(
-            "Date Range",
-            value=(min_date, max_date),
-            min_value=min_date,
-            max_value=max_date,
-        )
-
-        if isinstance(date_range, tuple) and len(date_range) == 2:
-            start_date, end_date = date_range
-            filtered = filtered[
-                (filtered["date"].isna())
-                | ((filtered["date"].dt.date >= start_date) & (filtered["date"].dt.date <= end_date))
-            ]
-
-    return filtered
+# ============================================================
+# TOP GLOBE COMMAND CENTER
+# ============================================================
 
 def build_plotly_globe(df: pd.DataFrame):
     """
