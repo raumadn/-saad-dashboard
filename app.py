@@ -974,20 +974,148 @@ def apply_sidebar_filters(df: pd.DataFrame) -> pd.DataFrame:
 # TOP GLOBE COMMAND CENTER
 # ============================================================
 
+def build_plotly_globe(df: pd.DataFrame):
+    """
+    Build a reliable native Plotly globe using orthographic projection.
+    This avoids raw HTML rendering problems on Streamlit Cloud.
+    """
+    region_coordinates = {
+        "usa": (37.0902, -95.7129),
+        "us": (37.0902, -95.7129),
+        "ca": (36.7783, -119.4179),
+        "tx": (31.9686, -99.9018),
+        "fl": (27.6648, -81.5158),
+        "ny": (43.2994, -74.2179),
+        "wa": (47.7511, -120.7401),
+        "il": (40.6331, -89.3985),
+        "az": (34.0489, -111.0937),
+        "nv": (38.8026, -116.4194),
+        "ga": (32.1656, -82.9001),
+        "uk": (55.3781, -3.4360),
+        "london": (51.5072, -0.1276),
+        "france": (46.2276, 2.2137),
+        "germany": (51.1657, 10.4515),
+        "japan": (36.2048, 138.2529),
+        "australia": (-25.2744, 133.7751),
+        "singapore": (1.3521, 103.8198),
+    }
+
+    region_df = (
+        df.dropna(subset=["region"])
+        .groupby("region", as_index=False)
+        .agg(
+            revenue=("revenue", "sum"),
+            transactions=("transaction_count", "sum"),
+        )
+    )
+
+    rows = []
+    for _, row in region_df.iterrows():
+        key = str(row["region"]).strip().lower()
+        coord = region_coordinates.get(key)
+        if coord is not None:
+            rows.append({
+                "region": row["region"],
+                "lat": coord[0],
+                "lon": coord[1],
+                "revenue": row["revenue"],
+                "transactions": row["transactions"],
+            })
+
+    if rows:
+        geo_df = pd.DataFrame(rows)
+    else:
+        # Fallback points so the globe remains visible even if region names are not recognized
+        geo_df = pd.DataFrame({
+            "region": ["USA", "UK", "Japan", "Singapore", "Australia"],
+            "lat": [37.0902, 55.3781, 36.2048, 1.3521, -25.2744],
+            "lon": [-95.7129, -3.4360, 138.2529, 103.8198, 133.7751],
+            "revenue": [1, 1, 1, 1, 1],
+            "transactions": [1, 1, 1, 1, 1],
+        })
+
+    max_revenue = geo_df["revenue"].max()
+    if pd.isna(max_revenue) or max_revenue <= 0:
+        sizes = [12] * len(geo_df)
+    else:
+        sizes = 10 + (geo_df["revenue"] / max_revenue * 28)
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scattergeo(
+            lat=geo_df["lat"],
+            lon=geo_df["lon"],
+            mode="markers+text",
+            text=geo_df["region"],
+            textposition="top center",
+            marker=dict(
+                size=sizes,
+                color=geo_df["revenue"],
+                colorscale="Blues",
+                showscale=False,
+                line=dict(width=1.2, color="rgba(255,255,255,0.85)"),
+                opacity=0.92,
+            ),
+            customdata=np.stack(
+                [
+                    geo_df["revenue"].fillna(0),
+                    geo_df["transactions"].fillna(0),
+                ],
+                axis=-1,
+            ),
+            hovertemplate=(
+                "<b>%{text}</b><br>"
+                "Revenue: $%{customdata[0]:,.0f}<br>"
+                "Transactions: %{customdata[1]:,.0f}<extra></extra>"
+            ),
+        )
+    )
+
+    fig.update_geos(
+        projection_type="orthographic",
+        projection_rotation=dict(lon=-35, lat=20, roll=0),
+        showland=True,
+        landcolor="rgba(35, 75, 125, 0.85)",
+        showocean=True,
+        oceancolor="rgba(5, 12, 28, 1)",
+        showcountries=True,
+        countrycolor="rgba(148, 197, 253, 0.35)",
+        showcoastlines=True,
+        coastlinecolor="rgba(191, 219, 254, 0.45)",
+        showframe=False,
+        lataxis_showgrid=True,
+        lonaxis_showgrid=True,
+        lataxis_gridcolor="rgba(147, 197, 253, 0.18)",
+        lonaxis_gridcolor="rgba(147, 197, 253, 0.18)",
+        bgcolor="rgba(0,0,0,0)",
+    )
+
+    fig.update_layout(
+        height=520,
+        margin=dict(l=0, r=0, t=0, b=0),
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(0,0,0,0)",
+        font=dict(color="#dbeafe"),
+        dragmode=False,
+    )
+
+    return fig
+
+
 def render_top_command_center(df: pd.DataFrame) -> None:
     total_revenue = df["revenue"].sum(skipna=True)
     transactions = df["transaction_count"].sum(skipna=True)
     units = df["quantity"].sum(skipna=True)
     avg_price = df["revenue"].mean(skipna=True)
     avg_margin = df["margin"].mean(skipna=True)
-    delivered_rate = min(99, max(10, 60 + int((df["revenue"].notna().mean()) * 30)))
+    data_index = min(99, max(10, 60 + int((df["revenue"].notna().mean()) * 30)))
 
     top_region = (
         df.groupby("region")["revenue"].sum().sort_values(ascending=False).index[0]
         if df["region"].notna().any()
         else "-"
     )
-
     top_brand = (
         df.groupby("brand")["revenue"].sum().sort_values(ascending=False).index[0]
         if df["brand"].notna().any()
@@ -995,7 +1123,7 @@ def render_top_command_center(df: pd.DataFrame) -> None:
     )
 
     st.markdown(
-        textwrap.dedent(f"""
+        """
         <div class="hero-header">
             <div>
                 <div class="brand-title">Departments</div>
@@ -1003,82 +1131,30 @@ def render_top_command_center(df: pd.DataFrame) -> None:
             </div>
             <div class="status-pill">● Premium Analytics</div>
         </div>
-
-        <div class="top-shell">
-            <div class="glass-card">
-                <div class="panel-title">Total Revenue</div>
-                <div class="panel-subtitle">Selected automotive datasets</div>
-                <div class="large-number">{format_currency(total_revenue)}</div>
-                <div class="delta-up">▲ Integrated market, dealer, and order data</div>
-                <br>
-                <div class="mini-stat">
-                    <div class="mini-icon blue-icon">↗</div>
-                    <div>
-                        <div class="mini-label">Transactions</div>
-                        <div class="mini-value">{format_number(transactions)}</div>
-                    </div>
-                </div>
-                <div class="mini-stat">
-                    <div class="mini-icon green-icon">✓</div>
-                    <div>
-                        <div class="mini-label">Units / Quantity</div>
-                        <div class="mini-value">{format_number(units)}</div>
-                    </div>
-                </div>
-                <div class="mini-stat">
-                    <div class="mini-icon orange-icon">$</div>
-                    <div>
-                        <div class="mini-label">Average Deal Value</div>
-                        <div class="mini-value">{format_currency(avg_price)}</div>
-                    </div>
-                </div>
-                <br>
-                <div class="panel-title">Market Leader</div>
-                <div class="large-number" style="font-size:1.55rem;">{top_brand}</div>
-                <div class="panel-subtitle">Top region: {top_region}</div>
-            </div>
-
-            <div class="glass-card hero-card">
-                <div class="orb-wrap">
-                    <div class="orb-dot"></div>
-                    <div class="signal-ring"></div>
-                </div>
-            </div>
-
-            <div class="glass-card">
-                <div class="panel-title">Operational Status</div>
-                <div class="panel-subtitle">Sales data readiness</div>
-                <div class="large-number">{delivered_rate}%</div>
-                <div class="delta-up">▲ Data availability index</div>
-                <br>
-                <div class="panel-title">Average Margin</div>
-                <div class="large-number" style="font-size:1.85rem;">{format_currency(avg_margin)}</div>
-                <div class="panel-subtitle">Available mainly from vehicle market pricing</div>
-                <br>
-                <div class="mini-stat">
-                    <div class="mini-icon blue-icon">3D</div>
-                    <div>
-                        <div class="mini-label">Dashboard Mode</div>
-                        <div class="mini-value">Globe Intelligence</div>
-                    </div>
-                </div>
-                <div class="mini-stat">
-                    <div class="mini-icon green-icon">API</div>
-                    <div>
-                        <div class="mini-label">Data Source</div>
-                        <div class="mini-value">Kaggle API</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        """),
+        """,
         unsafe_allow_html=True,
     )
 
+    left_col, globe_col, right_col = st.columns([1.05, 2, 1.05], gap="large")
 
-# ============================================================
-# DASHBOARD SECTIONS
-# ============================================================
+    with left_col:
+        st.metric("Total Revenue", format_currency(total_revenue))
+        st.metric("Transactions", format_number(transactions))
+        st.metric("Units / Quantity", format_number(units))
+        st.metric("Average Deal Value", format_currency(avg_price))
+        st.metric("Market Leader", str(top_brand))
+
+    with globe_col:
+        fig = build_plotly_globe(df)
+        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+    with right_col:
+        st.metric("Operational Status", f"{data_index}%")
+        st.metric("Average Margin", format_currency(avg_margin))
+        st.metric("Top Region", str(top_region))
+        st.metric("Dashboard Mode", "Globe Intelligence")
+        st.metric("Data Source", "Kaggle API Ready")
+
 
 def render_kpis(df: pd.DataFrame) -> None:
     total_revenue = df["revenue"].sum(skipna=True)
