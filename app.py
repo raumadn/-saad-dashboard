@@ -18,12 +18,21 @@ except Exception:
     KaggleApi = None
 
 
+# ============================================================
+# PAGE CONFIG
+# ============================================================
+
 st.set_page_config(
     page_title="SAAD Dealer | Automotive Intelligence",
     page_icon="🚘",
     layout="wide",
     initial_sidebar_state="collapsed",
 )
+
+
+# ============================================================
+# CONSTANTS
+# ============================================================
 
 APP_TITLE = "SAAD Dealer"
 APP_SUBTITLE = "Automotive Sales Intelligence Command Center"
@@ -50,6 +59,10 @@ DATASETS = {
     },
 }
 
+
+# ============================================================
+# THEME CSS
+# ============================================================
 
 st.markdown(
     textwrap.dedent("""
@@ -371,10 +384,159 @@ st.markdown(
                 height: 320px;
             }
         }
-    </style>
+    
+
+        /* =========================
+           5.5 INCH PHONE OPTIMIZATION
+        ========================= */
+
+        html, body {
+            overflow-x: hidden !important;
+        }
+
+        [data-testid="stSidebar"],
+        [data-testid="collapsedControl"] {
+            display: none !important;
+        }
+
+        div[data-testid="stHorizontalBlock"] {
+            gap: 0.65rem !important;
+        }
+
+        @media (max-width: 480px) {
+            .main .block-container {
+                padding-top: 0.55rem !important;
+                padding-left: 0.65rem !important;
+                padding-right: 0.65rem !important;
+                padding-bottom: 1.2rem !important;
+                max-width: 100% !important;
+            }
+
+            .hero-header {
+                align-items: flex-start !important;
+                gap: 8px !important;
+                margin-bottom: 10px !important;
+            }
+
+            .brand-title {
+                font-size: 1.02rem !important;
+                line-height: 1.16 !important;
+                letter-spacing: -0.02em !important;
+                max-width: 230px !important;
+            }
+
+            .breadcrumb {
+                font-size: 0.62rem !important;
+                line-height: 1.25 !important;
+                margin-top: 3px !important;
+                max-width: 230px !important;
+            }
+
+            .status-pill {
+                font-size: 0.55rem !important;
+                padding: 5px 7px !important;
+                white-space: nowrap !important;
+                letter-spacing: 0.02em !important;
+            }
+
+            div[data-testid="stMetric"] {
+                padding: 9px 10px !important;
+                border-radius: 14px !important;
+                margin-bottom: 0.25rem !important;
+                min-height: auto !important;
+            }
+
+            div[data-testid="stMetric"] label {
+                font-size: 0.64rem !important;
+                line-height: 1.12 !important;
+            }
+
+            div[data-testid="stMetric"] [data-testid="stMetricValue"] {
+                font-size: 0.98rem !important;
+                line-height: 1.16 !important;
+            }
+
+            div[data-testid="stMetricDelta"] {
+                font-size: 0.60rem !important;
+            }
+
+            .dashboard-section-title {
+                font-size: 0.94rem !important;
+                margin: 12px 0 6px 0 !important;
+            }
+
+            .stTabs [data-baseweb="tab-list"] {
+                gap: 6px !important;
+                overflow-x: auto !important;
+                flex-wrap: nowrap !important;
+                scrollbar-width: none !important;
+            }
+
+            .stTabs [data-baseweb="tab-list"]::-webkit-scrollbar {
+                display: none !important;
+            }
+
+            .stTabs [data-baseweb="tab"] {
+                padding: 6px 9px !important;
+                font-size: 0.64rem !important;
+                white-space: nowrap !important;
+                flex-shrink: 0 !important;
+            }
+
+            div[data-testid="stPlotlyChart"] {
+                border-radius: 16px !important;
+                overflow: hidden !important;
+                margin-top: 0.25rem !important;
+                margin-bottom: 0.55rem !important;
+            }
+
+            div[data-testid="stDataFrame"] {
+                font-size: 0.68rem !important;
+            }
+
+            .stButton > button,
+            .stDownloadButton > button {
+                width: 100% !important;
+                border-radius: 12px !important;
+                padding: 0.55rem 0.75rem !important;
+                font-size: 0.78rem !important;
+            }
+
+            .element-container {
+                margin-bottom: 0.25rem !important;
+            }
+        }
+
+        @media (max-width: 390px) {
+            .brand-title {
+                font-size: 0.95rem !important;
+                max-width: 200px !important;
+            }
+
+            .breadcrumb {
+                font-size: 0.56rem !important;
+                max-width: 200px !important;
+            }
+
+            .status-pill {
+                font-size: 0.50rem !important;
+                padding: 4px 6px !important;
+            }
+
+            div[data-testid="stMetric"] [data-testid="stMetricValue"] {
+                font-size: 0.92rem !important;
+            }
+        }
+
+</style>
     """),
     unsafe_allow_html=True,
 )
+
+
+# ============================================================
+# DATA UTILITIES
+# ============================================================
 
 def normalize_column_name(col: str) -> str:
     col = str(col).strip().lower()
@@ -481,7 +643,7 @@ def safe_group_mean(df: pd.DataFrame, group_col: str, value_col: str, top_n: int
     )
 
 
-def apply_dark_layout(fig, height: int = 430):
+def apply_dark_layout(fig, height: int = 320):
     fig.update_layout(
         height=height,
         template="plotly_dark",
@@ -507,6 +669,11 @@ def apply_dark_layout(fig, height: int = 430):
     )
 
     return fig
+
+
+# ============================================================
+# KAGGLE API
+# ============================================================
 
 def _read_local_kaggle_json() -> Tuple[Optional[str], Optional[str]]:
     """Local-only fallback. These files are gitignored and must not be uploaded to GitHub."""
@@ -671,6 +838,10 @@ def load_dataset_from_kaggle(dataset_key: str, max_rows: Optional[int]) -> pd.Da
     return loaded_tables[0]
 
 
+# ============================================================
+# DEMO FALLBACK DATA
+# ============================================================
+
 @st.cache_data(show_spinner=False)
 def generate_demo_data(seed: int = 42) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
@@ -753,6 +924,10 @@ def generate_demo_data(seed: int = 42) -> pd.DataFrame:
     return pd.concat([vehicle, dealer, orders], ignore_index=True)
 
 
+# ============================================================
+# STANDARDIZATION
+# ============================================================
+
 def standardize_sales_data(df: pd.DataFrame, dataset_key: str) -> pd.DataFrame:
     original = df.copy()
     original.columns = [normalize_column_name(c) for c in original.columns]
@@ -830,6 +1005,10 @@ def load_all_standardized_data(
     return pd.concat(frames, ignore_index=True)
 
 
+# ============================================================
+# SIDEBAR AND FILTERS
+# ============================================================
+
 def render_sidebar() -> Tuple[Tuple[str, ...], Optional[int], bool]:
     """
     Silent loader.
@@ -849,6 +1028,11 @@ def apply_sidebar_filters(df: pd.DataFrame) -> pd.DataFrame:
     Sidebar filters removed for clean presentation mode.
     """
     return df.copy()
+
+
+# ============================================================
+# TOP GLOBE COMMAND CENTER
+# ============================================================
 
 def build_plotly_globe(df: pd.DataFrame):
     """
@@ -968,7 +1152,7 @@ def build_plotly_globe(df: pd.DataFrame):
     )
 
     fig.update_layout(
-        height=520,
+        height=340,
         margin=dict(l=0, r=0, t=0, b=0),
         paper_bgcolor="rgba(0,0,0,0)",
         plot_bgcolor="rgba(0,0,0,0)",
@@ -1002,8 +1186,8 @@ def render_top_command_center(df: pd.DataFrame) -> None:
         """
         <div class="hero-header">
             <div>
-                <div class="brand-title">Raum Saad Adnan Property</div>
-                <div class="breadcrumb">Map / Raum Saad Adnan Property / Command Center</div>
+                <div class="brand-title">Raum Saad Adnan<br>Property</div>
+                <div class="breadcrumb">Map / Property / Command Center</div>
             </div>
             <div class="status-pill">● Premium Analytics</div>
         </div>
@@ -1028,7 +1212,6 @@ def render_top_command_center(df: pd.DataFrame) -> None:
         st.metric("Operational Status", f"{data_index}%")
         st.metric("Average Margin", format_currency(avg_margin))
         st.metric("Top Region", str(top_region))
-        st.metric("Dashboard Mode", "Globe Intelligence")
 
 
 def render_kpis(df: pd.DataFrame) -> None:
@@ -1069,7 +1252,7 @@ def render_overview(df: pd.DataFrame) -> None:
                 title="Monthly Revenue Flow",
                 labels={"month": "Month", "revenue": "Revenue"},
             )
-            fig = apply_dark_layout(fig, 430)
+            fig = apply_dark_layout(fig, 310)
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("Date column belum cukup untuk monthly trend.")
@@ -1085,7 +1268,7 @@ def render_overview(df: pd.DataFrame) -> None:
                 hole=0.62,
                 title="Revenue Mix by Dataset",
             )
-            fig = apply_dark_layout(fig, 430)
+            fig = apply_dark_layout(fig, 310)
             st.plotly_chart(fig, use_container_width=True)
 
     col3, col4 = st.columns(2)
@@ -1102,7 +1285,7 @@ def render_overview(df: pd.DataFrame) -> None:
                 title="Top Brand / Product Line",
                 labels={"brand": "Brand / Product Line", "revenue": "Revenue"},
             )
-            fig = apply_dark_layout(fig, 480)
+            fig = apply_dark_layout(fig, 320)
             st.plotly_chart(fig, use_container_width=True)
 
     with col4:
@@ -1117,7 +1300,7 @@ def render_overview(df: pd.DataFrame) -> None:
                 title="Top Region",
                 labels={"region": "Region", "revenue": "Revenue"},
             )
-            fig = apply_dark_layout(fig, 480)
+            fig = apply_dark_layout(fig, 320)
             st.plotly_chart(fig, use_container_width=True)
 
 
@@ -1151,7 +1334,7 @@ def render_vehicle_market(df: pd.DataFrame) -> None:
                 title="Odometer vs Selling Price",
                 labels={"odometer": "Odometer", "revenue": "Selling Price"},
             )
-            fig = apply_dark_layout(fig, 480)
+            fig = apply_dark_layout(fig, 320)
             st.plotly_chart(fig, use_container_width=True)
 
     with col6:
@@ -1164,7 +1347,7 @@ def render_vehicle_market(df: pd.DataFrame) -> None:
                 title="Average Selling Price by Condition",
                 labels={"condition": "Condition", "revenue": "Average Selling Price"},
             )
-            fig = apply_dark_layout(fig, 480)
+            fig = apply_dark_layout(fig, 320)
             st.plotly_chart(fig, use_container_width=True)
 
     col7, col8 = st.columns(2)
@@ -1179,7 +1362,7 @@ def render_vehicle_market(df: pd.DataFrame) -> None:
                 orientation="h",
                 title="Average Margin by Brand",
             )
-            fig = apply_dark_layout(fig, 460)
+            fig = apply_dark_layout(fig, 310)
             st.plotly_chart(fig, use_container_width=True)
 
     with col8:
@@ -1197,7 +1380,7 @@ def render_vehicle_market(df: pd.DataFrame) -> None:
                 markers=True,
                 title="Average Selling Price by Vehicle Year",
             )
-            fig = apply_dark_layout(fig, 460)
+            fig = apply_dark_layout(fig, 310)
             st.plotly_chart(fig, use_container_width=True)
 
 
@@ -1228,7 +1411,7 @@ def render_dealer_sales(df: pd.DataFrame) -> None:
                 orientation="h",
                 title="Top Salesperson by Revenue",
             )
-            fig = apply_dark_layout(fig, 500)
+            fig = apply_dark_layout(fig, 330)
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("Kolom salesperson tidak tersedia pada versi dataset saat ini.")
@@ -1243,7 +1426,7 @@ def render_dealer_sales(df: pd.DataFrame) -> None:
                 orientation="h",
                 title="Top Car Model by Revenue",
             )
-            fig = apply_dark_layout(fig, 500)
+            fig = apply_dark_layout(fig, 330)
             st.plotly_chart(fig, use_container_width=True)
 
     col7, col8 = st.columns(2)
@@ -1264,7 +1447,7 @@ def render_dealer_sales(df: pd.DataFrame) -> None:
                 orientation="h",
                 title="Units by Brand",
             )
-            fig = apply_dark_layout(fig, 460)
+            fig = apply_dark_layout(fig, 310)
             st.plotly_chart(fig, use_container_width=True)
 
     with col8:
@@ -1276,7 +1459,7 @@ def render_dealer_sales(df: pd.DataFrame) -> None:
         )
         if not year_sales.empty:
             fig = px.line(year_sales, x="year", y="revenue", markers=True, title="Dealer Revenue by Car Year")
-            fig = apply_dark_layout(fig, 460)
+            fig = apply_dark_layout(fig, 310)
             st.plotly_chart(fig, use_container_width=True)
 
 
@@ -1307,14 +1490,14 @@ def render_order_analytics(df: pd.DataFrame) -> None:
                 orientation="h",
                 title="Revenue by Product Line",
             )
-            fig = apply_dark_layout(fig, 500)
+            fig = apply_dark_layout(fig, 330)
             st.plotly_chart(fig, use_container_width=True)
 
     with col6:
         deal_size = safe_group_sum(order_df, "deal_size", "revenue", 10)
         if not deal_size.empty and not deal_size["deal_size"].eq("Unknown").all():
             fig = px.pie(deal_size, names="deal_size", values="revenue", hole=0.58, title="Revenue Share by Deal Size")
-            fig = apply_dark_layout(fig, 500)
+            fig = apply_dark_layout(fig, 330)
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("Kolom deal size tidak tersedia pada versi dataset saat ini.")
@@ -1331,7 +1514,7 @@ def render_order_analytics(df: pd.DataFrame) -> None:
                 orientation="h",
                 title="Revenue by Region / Country",
             )
-            fig = apply_dark_layout(fig, 460)
+            fig = apply_dark_layout(fig, 310)
             st.plotly_chart(fig, use_container_width=True)
 
     with col8:
@@ -1344,7 +1527,7 @@ def render_order_analytics(df: pd.DataFrame) -> None:
         )
         if not monthly.empty:
             fig = px.line(monthly, x="month", y="revenue", markers=True, title="Monthly Automobile Order Revenue")
-            fig = apply_dark_layout(fig, 460)
+            fig = apply_dark_layout(fig, 310)
             st.plotly_chart(fig, use_container_width=True)
 
 
